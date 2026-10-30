@@ -18,3 +18,4 @@
 - [Пошаговый план с контрольными сроками](docs/IMPLEMENTATION_PLAN.md)
 - [Матрица приёмки и уровни проверки](docs/ACCEPTANCE.md)
 - [Результат проверки VPS](docs/HOSTING.md)
+- [Размещение, текущие адреса и откат](deploy/README.md)

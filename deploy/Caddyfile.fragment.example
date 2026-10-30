@@ -1,0 +1,41 @@
+# Fragment for the existing Caddy instance. Replace domains and add exact SNI
+# routes to these loopback ports in the existing HAProxy frontend.
+# Existing global options and existing sites must be preserved.
+http://app.example.com:80, http://hooks.example.com:80 {
+    redir https://{host}{uri} permanent
+}
+https://app.example.com:10445 {
+    bind 127.0.0.1
+    tls {
+        issuer acme {
+            disable_tlsalpn_challenge
+        }
+    }
+    header {
+        -Server
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+    root * /srv/ld-latte/site
+    encode zstd gzip
+    try_files {path} /index.html
+    file_server
+}
+https://hooks.example.com:10446 {
+    bind 127.0.0.1
+    tls {
+        issuer acme {
+            disable_tlsalpn_challenge
+        }
+    }
+    header -Server
+    handle /healthz {
+        reverse_proxy 127.0.0.1:15678
+    }
+    handle /webhook/* {
+        reverse_proxy 127.0.0.1:15678
+    }
+    handle {
+        respond 404
+    }
+}
