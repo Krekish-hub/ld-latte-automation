@@ -15,6 +15,7 @@ for (const count of [0, 2, 5, 9]) {
     getInputData: () => [{ json: {} }],
     getNodeParameter: (name, _index, fallback) => parameters[name] ?? fallback,
     getNode: () => ({ name: 'Send reply', typeVersion: 1.2, type: 'n8n-nodes-base.telegram' }),
+    getInstanceId: () => 'test-instance',
     getCredentials: async () => ({ accessToken: 'TEST_NOT_A_REAL_TOKEN', baseUrl: 'https://api.telegram.org' }),
     continueOnFail: () => false,
     helpers: {
