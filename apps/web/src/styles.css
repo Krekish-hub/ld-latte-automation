@@ -15,6 +15,29 @@
   --border: #e6e9e1;
   --lime: #d9ebad;
 }
+.confirmation-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: #eaf2df;
+  color: #648344;
+  margin: 0 0 22px;
+}
+.confirmation-address {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #36543d;
+  margin-top: 5px;
+}
+.confirmation-actions .button.full {
+  margin-top: 12px;
+}
+.confirmation-actions .field-hint {
+  margin-top: 13px;
+}
 * {
   box-sizing: border-box;
 }

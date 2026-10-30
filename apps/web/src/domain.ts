@@ -57,6 +57,14 @@ export function matchesDraft(row: RequestRow, draft: Draft) {
 export function escapeSearch(value: string) {
   return value.replace(/[\\%_]/g, "\\$&");
 }
+export function isAuthRateLimit(error: unknown) {
+  const e = error as { code?: string; status?: number };
+  return (
+    e?.status === 429 ||
+    e?.code === "over_email_send_rate_limit" ||
+    e?.code === "over_request_rate_limit"
+  );
+}
 export function humanError(error: unknown) {
   const e = error as { code?: string; message?: string; status?: number };
   if (e?.message === "Invalid login credentials")
@@ -68,7 +76,7 @@ export function humanError(error: unknown) {
     e?.message?.includes("Email address not authorized")
   )
     return "Отправка писем для этого адреса ещё не настроена. Сообщите владельцу сервиса.";
-  if (e?.code === "over_email_send_rate_limit" || e?.status === 429)
+  if (isAuthRateLimit(e))
     return "Слишком много попыток. Подождите немного и попробуйте ещё раз.";
   if (e?.code === "user_already_exists")
     return "Аккаунт уже существует. Попробуйте войти.";

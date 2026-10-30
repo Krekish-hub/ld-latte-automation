@@ -85,6 +85,8 @@ const browser = await chromium.launch({
 });
 const errors = [];
 let inserts = 0;
+let signupRequests = 0;
+let signupLimited = false;
 try {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 960 },
@@ -95,6 +97,20 @@ try {
     const request = route.request(),
       url = new URL(request.url());
     if (url.pathname.startsWith("/auth/")) {
+      if (url.pathname.endsWith("/signup")) {
+        signupRequests++;
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        if (signupLimited)
+          await route.fulfill({
+            status: 429,
+            json: {
+              code: "over_email_send_rate_limit",
+              msg: "email rate limit exceeded",
+            },
+          });
+        else await route.fulfill({ json: { user, session: null } });
+        return;
+      }
       await route.fulfill({ json: { user } });
       return;
     }
@@ -152,6 +168,50 @@ try {
     .getByRole("link", { name: "Создать аккаунт", exact: true })
     .click();
   await page.getByRole("heading", { name: "Давайте знакомиться" }).waitFor();
+  await page.getByLabel("Электронная почта").fill("demo@example.test");
+  await page.getByLabel("Пароль", { exact: true }).fill("Test-only-password1");
+  await page
+    .getByRole("button", { name: "Создать аккаунт", exact: true })
+    .click();
+  await page
+    .locator("form")
+    .evaluate((form) =>
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true }),
+      ),
+    );
+  await page.getByRole("heading", { name: "Проверьте почту" }).waitFor();
+  assert.equal(signupRequests, 1);
+  assert.equal(await page.locator("form").count(), 0);
+  assert.ok(
+    await page
+      .getByRole("button", { name: /Повторить отправку через/ })
+      .isDisabled(),
+  );
+  await page.screenshot({
+    path: "tmp/qa/signup-confirmation.png",
+    fullPage: true,
+  });
+  signupLimited = true;
+  await page.goto(base + "/register");
+  await page.getByLabel("Электронная почта").fill("demo@example.test");
+  await page.getByLabel("Пароль", { exact: true }).fill("Test-only-password1");
+  await page
+    .getByRole("button", { name: "Создать аккаунт", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "Проверьте почту" }).waitFor();
+  assert.ok(await page.getByText(/Письмо уже могло прийти/).isVisible());
+  assert.equal(await page.getByRole("alert").count(), 0);
+  assert.ok(
+    await page
+      .getByRole("button", { name: /Повторить отправку через/ })
+      .isDisabled(),
+  );
+  assert.equal(signupRequests, 2);
+  await page.screenshot({
+    path: "tmp/qa/signup-rate-limit.png",
+    fullPage: true,
+  });
   const encode = (object) =>
     Buffer.from(JSON.stringify(object)).toString("base64url");
   const token = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: user.id, aud: "authenticated", role: "authenticated", exp: Math.floor(Date.now() / 1000) + 3600 })}.test`;

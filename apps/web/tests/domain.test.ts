@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   escapeSearch,
   humanError,
+  isAuthRateLimit,
   matchesDraft,
   payload,
   validateDraft,
@@ -38,6 +39,14 @@ describe("request input", () => {
       payload({ title: " A ", description: " B\n", category: "report" }),
     ).toEqual({ title: "A", description: "B", category: "report" });
   });
+});
+it("recognizes auth rate limits without inventing a registration result", () => {
+  expect(isAuthRateLimit({ status: 429 })).toBe(true);
+  expect(isAuthRateLimit({ code: "over_email_send_rate_limit" })).toBe(true);
+  expect(isAuthRateLimit({ code: "over_request_rate_limit" })).toBe(true);
+  expect(
+    isAuthRateLimit({ code: "email_address_not_authorized", status: 400 }),
+  ).toBe(false);
 });
 describe("literal title search", () => {
   it("escapes SQL wildcard characters and backslashes but preserves punctuation", () => {

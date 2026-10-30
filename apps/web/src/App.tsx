@@ -25,6 +25,7 @@ import {
   Link2,
   LoaderCircle,
   LogOut,
+  MailCheck,
   Plus,
   Search,
   Sparkles,
@@ -44,6 +45,7 @@ import {
   categories,
   emptyDraft,
   humanError,
+  isAuthRateLimit,
   matchesDraft,
   statuses,
   validateDraft,
@@ -224,10 +226,54 @@ function Auth({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(initialError),
     [message, setMessage] = useState("");
+  const [confirmationEmail, setConfirmationEmail] = useState("");
+  const [limited, setLimited] = useState(false);
+  const [retryAt, setRetryAt] = useState(0),
+    [seconds, setSeconds] = useState(0);
   const lock = useRef(false);
+  useEffect(() => {
+    if (!retryAt) return;
+    const tick = () =>
+      setSeconds(Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)));
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [retryAt]);
+  function waitForEmail(address: string, rateLimited: boolean) {
+    setConfirmationEmail(address);
+    setLimited(rateLimited);
+    setPassword("");
+    setRetryAt(Date.now() + 60_000);
+    setSeconds(60);
+  }
+  async function resend() {
+    if (lock.current || seconds > 0) return;
+    lock.current = true;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const { error } = await supabase!.auth.resend({
+        type: "signup",
+        email: confirmationEmail,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) throw error;
+      waitForEmail(confirmationEmail, false);
+      setMessage(
+        "Запрос на повторную отправку принят. Проверьте входящие и папку «Спам».",
+      );
+    } catch (e) {
+      if (isAuthRateLimit(e)) waitForEmail(confirmationEmail, true);
+      else setError(humanError(e));
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (lock.current) return;
+    if (lock.current || confirmationEmail || (register && seconds > 0)) return;
     lock.current = true;
     setBusy(true);
     setError("");
@@ -242,10 +288,7 @@ function Auth({
           },
         });
         if (error) throw error;
-        if (!data.session)
-          setMessage(
-            "Проверьте почту: если адрес доступен для регистрации, на него придёт ссылка подтверждения. Затем вернитесь и войдите.",
-          );
+        if (!data.session) waitForEmail(email.trim(), false);
       } else {
         const { error } = await supabase!.auth.signInWithPassword({
           email: email.trim(),
@@ -254,7 +297,8 @@ function Auth({
         if (error) throw error;
       }
     } catch (e) {
-      setError(humanError(e));
+      if (register && isAuthRateLimit(e)) waitForEmail(email.trim(), true);
+      else setError(humanError(e));
     } finally {
       lock.current = false;
       setBusy(false);
@@ -300,53 +344,125 @@ function Auth({
         </div>
         <div className="auth-box">
           <span className="eyebrow">РАБОЧЕЕ ПРОСТРАНСТВО</span>
-          <h2>{register ? "Давайте знакомиться" : "С возвращением"}</h2>
+          {confirmationEmail && (
+            <span className="confirmation-icon">
+              <MailCheck size={28} />
+            </span>
+          )}
+          <h2>
+            {confirmationEmail
+              ? "Проверьте почту"
+              : register
+                ? "Давайте знакомиться"
+                : "С возвращением"}
+          </h2>
           <p className="muted">
-            {register
-              ? "Создайте аккаунт, чтобы отправить первую заявку."
-              : "Войдите, чтобы продолжить работу с заявками."}
+            {confirmationEmail ? (
+              <>
+                Адрес для подтверждения:{" "}
+                <strong className="confirmation-address">
+                  {confirmationEmail}
+                </strong>
+              </>
+            ) : register ? (
+              "Создайте аккаунт, чтобы отправить первую заявку."
+            ) : (
+              "Войдите, чтобы продолжить работу с заявками."
+            )}
           </p>
+          {confirmationEmail && (
+            <Notice kind={limited ? "info" : "success"}>
+              {limited
+                ? "Сервис временно ограничил отправку писем. Письмо уже могло прийти после предыдущей попытки — проверьте входящие и папку «Спам». Это не означает, что регистрация завершилась ошибкой."
+                : "Запрос на регистрацию принят. Если адрес доступен для регистрации, на него придёт ссылка. Перейдите по ней, чтобы подтвердить почту и войти."}
+            </Notice>
+          )}
           {error && <Notice>{error}</Notice>}
           {message && <Notice kind="success">{message}</Notice>}
-          <form onSubmit={submit}>
-            <fieldset disabled={busy}>
-              <label htmlFor="email">Электронная почта</label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                maxLength={254}
-              />
-              <label htmlFor="password">Пароль</label>
-              <input
-                id="password"
-                type="password"
-                autoComplete={register ? "new-password" : "current-password"}
-                placeholder={
-                  register ? "Не менее 8 символов" : "Введите пароль"
-                }
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={register ? 8 : 1}
-                maxLength={128}
-              />
-              {register && (
-                <p className="field-hint">
-                  Не менее 8 символов. Используйте уникальный пароль.
-                </p>
-              )}
-              <button className="button primary full" disabled={busy}>
-                {busy ? <LoaderCircle className="spin" size={18} /> : null}
-                {busy ? "Подождите…" : register ? "Создать аккаунт" : "Войти"}
-                {!busy && <ArrowRight size={18} />}
+          {confirmationEmail ? (
+            <div className="confirmation-actions">
+              <Link className="button primary full" to="/login">
+                Перейти ко входу <ArrowRight size={18} />
+              </Link>
+              <button
+                type="button"
+                className="button secondary full"
+                disabled={busy || seconds > 0}
+                onClick={resend}
+              >
+                {busy
+                  ? "Отправляем…"
+                  : seconds > 0
+                    ? `Повторить отправку через ${seconds} с`
+                    : "Отправить письмо ещё раз"}
               </button>
-            </fieldset>
-          </form>
+              <p className="field-hint">
+                Если письмо уже пришло, повторная отправка не нужна. При
+                сохранении ограничения попробуйте позже.
+              </p>
+              <button
+                type="button"
+                className="button text full"
+                disabled={busy}
+                onClick={() => {
+                  setConfirmationEmail("");
+                  setError("");
+                  setMessage("");
+                }}
+              >
+                Исправить адрес почты
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={submit}>
+              <fieldset disabled={busy}>
+                <label htmlFor="email">Электронная почта</label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  maxLength={254}
+                />
+                <label htmlFor="password">Пароль</label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete={register ? "new-password" : "current-password"}
+                  placeholder={
+                    register ? "Не менее 8 символов" : "Введите пароль"
+                  }
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={register ? 8 : 1}
+                  maxLength={128}
+                />
+                {register && (
+                  <p className="field-hint">
+                    Не менее 8 символов. Используйте уникальный пароль.
+                  </p>
+                )}
+                <button
+                  className="button primary full"
+                  disabled={busy || (register && seconds > 0)}
+                >
+                  {busy ? <LoaderCircle className="spin" size={18} /> : null}
+                  {busy
+                    ? "Подождите…"
+                    : register && seconds > 0
+                      ? `Повторить через ${seconds} с`
+                      : register
+                        ? "Создать аккаунт"
+                        : "Войти"}
+                  {!busy && <ArrowRight size={18} />}
+                </button>
+              </fieldset>
+            </form>
+          )}
           <p className="auth-switch">
             {register ? "Уже есть аккаунт?" : "Впервые здесь?"}{" "}
             <Link to={register ? "/login" : "/register"}>
