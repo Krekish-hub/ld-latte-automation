@@ -31,7 +31,7 @@ n8n 2.45.6 запущен Docker-контейнером `ld-latte-n8n` на пе
 4. Запустить `sh deploy/run-n8n.sh`. Не прерывать миграции при первом старте.
 5. Проверить `curl http://127.0.0.1:5678/healthz` и состояние контейнера.
 6. Настроить HTTPS-прокси и зашифрованный туннель до loopback 5678. Единственный HTTP-прокси в текущей схеме - Caddy; HAProxy и SSH передают TCP, поэтому N8N_PROXY_HOPS=1.
-7. Через SSH-туннель открыть локальный редактор, создать владельца, настроить credentials и workflow. Эти шаги пока не выполнены.
+7. Через SSH-туннель открыть локальный редактор, создать владельца, настроить credentials и workflow.
 
 Пример доступа к редактору с компьютера администратора:
 
@@ -40,6 +40,28 @@ ssh -N -L 5678:127.0.0.1:5678 USER@N8N_HOST
 ```
 
 После входа в SSH открыть `http://localhost:5678`. Пароли и токены вводить непосредственно в интерфейс/credentials. Публичный /setup не открывать для начального создания владельца.
+
+## Доверие к сертификату Supabase
+
+Для используемого shared pooler проверка TLS в исходном Node.js-контейнере завершалась `SELF_SIGNED_CERT_IN_CHAIN`. На 31 октября установлен публичный [Supabase Root 2021 CA](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt), без отключения проверки цепочки или hostname. Это сертификат, а не приватный ключ.
+
+При переносе скачать CA по HTTPS из источника Supabase и сверить его до установки:
+
+```sh
+curl -fsSL https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt -o /tmp/supabase-ca.crt
+openssl x509 -in /tmp/supabase-ca.crt -noout -subject -issuer -enddate -fingerprint -sha256
+```
+
+Проверенный SHA-256 отпечаток сертификата: `80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA`. Срок действия до 26.04.2031. При замене CA провайдером сначала проверить новый сертификат по официальному источнику.
+
+Скопировать его в постоянный volume работающего контейнера и разрешить чтение процессу n8n:
+
+```sh
+docker cp /tmp/supabase-ca.crt ld-latte-n8n:/home/node/.n8n/supabase-ca.crt
+docker exec -u 0 ld-latte-n8n chmod 644 /home/node/.n8n/supabase-ca.crt
+```
+
+В закрытый env-файл добавить `NODE_EXTRA_CA_CERTS=/home/node/.n8n/supabase-ca.crt`. Затем пересоздать только контейнер n8n по процедуре резервного копирования ниже, с прежним volume, encryption key и закреплённым образом: обычный restart не перечитывает Docker env-файл. Для чистой установки сертификат нужно положить в volume до включения этой переменной. В Postgres credential выбрать `SSL: Require`, выключить `Ignore SSL Issues`, установить пул максимум 2 подключения. После старта проверить новое соединение и запрет доступа роли к `requests` и `auth.users`.
 
 ## Обновление сайта
 

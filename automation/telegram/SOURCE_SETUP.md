@@ -41,8 +41,11 @@
 | Port | Порт выбранного session pooler из Connect |
 | SSL | Require |
 | Ignore SSL Issues | Выключено |
+| Maximum Connections | 2 (у роли лимит 3) |
 
 Не отключайте проверку TLS ради успешного подключения. Если n8n не доверяет цепочке, установите CA, полученный из доверенного источника Supabase, в доверенное хранилище экземпляра n8n; проверьте hostname и актуальность сертификата. SSH tunnel для исходящего подключения обычно не нужен. [n8n: Postgres credentials](https://docs.n8n.io/integrations/builtin/credentials/postgres/).
+
+На нашем экземпляре цепочка pooler требует Supabase Root 2021 CA. Сертификат установлен в постоянный volume, `NODE_EXTRA_CA_CERTS` задан в закрытом env-файле. `Ignore SSL Issues` остаётся выключенным. Установка и отпечаток приведены в [инструкции размещения](../../deploy/README.md#доверие-к-сертификату-supabase).
 
 Session mode выбран для простоты совместимости клиента; transaction pooler можно использовать после отдельной проверки, учитывая ограничения prepared statements/session state. Не подменяйте credential паролем `postgres`, если custom-role не подключается: сначала проверьте username с project ref, режим/порт, пароль, TLS, сетевые ограничения и поддержку роли выбранным pooler.
 
