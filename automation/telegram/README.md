@@ -1,8 +1,10 @@
 # Telegram-бот: динамическое меню LD LATTE
 
-Бот для проверки: **@ZmeiiniyBot**. Workflow создан для установленного n8n **2.45.6**, импортирован на сервер и пока **выключен**. Токен Telegram и Postgres credential ещё не привязаны; живые ответы бота не проверены.
+Бот для проверки: **@ZmeiiniyBot**. Workflow активен в n8n **2.45.6**, Telegram и Postgres credentials привязаны. Прямой HTTPS-вход перенесен на `hooks-latte.144-31-244-32.nip.io:88`; доставка сообщения восстановлена. Пользователь получил «Выберите услугу:», но inline-кнопки отсутствовали: клавиатура проверяется, полная приемка бота еще не завершена. Текущая инфраструктура и порядок отката - [TELEGRAM_DIRECT.md](../../deploy/TELEGRAM_DIRECT.md).
 
 ## Материалы
+
+Для импорта требуется небольшой локальный узел `CUSTOM.ldLatteTelegram`: [исходник](custom/LdLatteTelegram.node.js), [установка](CUSTOM_NODE.md). Он отправляет динамическую клавиатуру JSON через Telegram API и использует существующий зашифрованный Telegram credential. Нативный редактор fixed collection превращал expression списка строк в пустые элементы; этот формат больше не используется.
 
 - [workflow.json](workflow.json) - импортируемый экспорт без значений секретов и без ссылок на чужие credentials.
 - [SOURCE_SETUP.md](SOURCE_SETUP.md) - создание таблицы/роли в Supabase, пароль роли, pooler/TLS, тестовые наборы и права.

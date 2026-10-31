@@ -24,7 +24,7 @@ test('callback validates stable UUID before a parameterized query', () => {
 for (const count of [0, 2, 5, 9]) test(`dynamic menu has ${count} active buttons`, () => {
   const reply = prepareReply(normalizeUpdate(message('/start')), { services: services.slice(0, count) });
   assert.equal(reply.rows.length, count); assert.equal(reply.hasButtons, count > 0);
-  for (const row of reply.rows) assert.ok(Buffer.byteLength(row.row.buttons[0].additionalFields.callback_data, 'utf8') <= 64);
+  for (const row of reply.rows) assert.ok(Buffer.byteLength(row[0].callback_data, 'utf8') <= 64);
   if (!count) assert.match(reply.text, /нет доступных услуг/);
 });
 test('callback returns current name and handles a missing/disabled service', () => {
@@ -42,6 +42,9 @@ test('export embeds tested functions and keeps aggregate query/credentials safe'
   const workflow = JSON.parse(await readFile(new URL('../workflow.json', import.meta.url), 'utf8'));
   assert.equal(workflow.active, false);
   assert.ok(workflow.nodes.every(n => !n.credentials));
+  const sender = workflow.nodes.find(n => n.name === 'Send reply');
+  assert.equal(sender.type, 'CUSTOM.ldLatteTelegram');
+  assert.equal(sender.parameters.keyboard, '={{ $json.rows }}');
   assert.deepEqual(workflow.nodes.find(n => n.name === 'Telegram updates').parameters.updates, ['message', 'callback_query']);
   const sql = workflow.nodes.find(n => n.name === 'Read active services');
   assert.match(sql.parameters.query, /\$1::uuid/); assert.match(sql.parameters.query, /coalesce\(jsonb_agg/);

@@ -20,7 +20,7 @@ node('Read active services', 'postgres', 2.6, [1680, 80], { operation: 'executeQ
 from public.services
 where active = true and ($1::uuid is null or id = $1::uuid);`, options: { queryReplacement: "={{ [ $('Normalize update').first().json.serviceId ] }}" } }, { onError: 'continueRegularOutput' });
 node('Prepare reply', 'code', 2, [1920, 160], { jsCode: `${prepareReply.toString()}\nreturn [{ json: prepareReply($('Normalize update').first().json, $input.first().json) }];` });
-node('Send reply', 'telegram', 1.2, [2160, 160], { resource: 'message', operation: 'sendMessage', chatId: '={{ $json.chatId }}', text: '={{ $json.text }}', replyMarkup: "={{ $json.hasButtons ? 'inlineKeyboard' : 'none' }}", inlineKeyboard: { rows: '={{ $json.rows }}' }, additionalFields: { appendAttribution: false, parse_mode: 'HTML' } });
+node('Send reply', 'telegram', 1, [2160, 160], { chatId: '={{ $json.chatId }}', text: '={{ $json.text }}', keyboard: '={{ $json.rows }}' }, { type: 'CUSTOM.ldLatteTelegram' });
 const connections = {};
 function connect(from, targets) {
   connections[from] = { main: targets.map(names => names.map(node => ({ node, type: 'main', index: 0 }))) };

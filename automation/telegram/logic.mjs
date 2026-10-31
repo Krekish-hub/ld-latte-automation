@@ -28,6 +28,6 @@ export function prepareReply(event, queryResult) {
   if (!services.length) return { ...reply, text: 'Сейчас нет доступных услуг. Попробуйте позже.' };
   return {
     ...reply, text: 'Выберите услугу:', hasButtons: true,
-    rows: services.map(service => ({ row: { buttons: [{ text: service.name, additionalFields: { callback_data: `svc:${service.id}` } }] } })),
+    rows: services.map(service => [{ text: service.name, callback_data: `svc:${service.id}` }]),
   };
 }
