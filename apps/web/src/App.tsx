@@ -485,6 +485,22 @@ function Workspace({ session }: { session: Session }) {
   const [signingOut, setSigningOut] = useState(false),
     [error, setError] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
+  const [savedMessage, setSavedMessage] = useState("");
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+  useEffect(() => {
+    const saved = (location.state as { saved?: string } | null)?.saved;
+    if (!saved) return;
+    setSavedMessage(saved);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, location.pathname, navigate]);
+  useEffect(() => {
+    if (!savedMessage) return;
+    const timer = setTimeout(() => setSavedMessage(""), 10_000);
+    return () => clearTimeout(timer);
+  }, [savedMessage]);
   async function logout() {
     if (signingOut) return;
     setSigningOut(true);
@@ -499,6 +515,30 @@ function Workspace({ session }: { session: Session }) {
   }
   return (
     <div className="workspace">
+      <div
+        className="save-toast-region"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {savedMessage && (
+          <div className="save-toast">
+            <CheckCircle2 size={24} aria-hidden="true" />
+            <div>
+              <strong>{savedMessage}</strong>
+              <span>Данные сохранены. Заявка доступна в списке.</span>
+            </div>
+            <button
+              type="button"
+              className="icon-button"
+              onClick={() => setSavedMessage("")}
+              aria-label="Закрыть уведомление"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        )}
+      </div>
       <aside className="sidebar">
         <Brand />
         <span className="nav-label">РАБОЧЕЕ ПРОСТРАНСТВО</span>
@@ -587,14 +627,6 @@ function RequestList() {
     [count, setCount] = useState(0),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
-  const location = useLocation();
-  const [success, setSuccess] = useState<string>(
-    () => (location.state as { saved?: string } | null)?.saved ?? "",
-  );
-  useEffect(() => {
-    if (location.state)
-      window.history.replaceState({ ...window.history.state, usr: null }, "");
-  }, [location.state]);
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebounced(search);
@@ -641,19 +673,6 @@ function RequestList() {
           <Plus size={19} /> Новая заявка
         </Link>
       </div>
-      {success && (
-        <div className="success-line" role="status">
-          <CheckCircle2 size={18} />
-          {success}
-          <button
-            className="icon-button"
-            onClick={() => setSuccess("")}
-            aria-label="Закрыть уведомление"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
       <div className="intro-strip">
         <span className="intro-icon">
           <Sparkles size={21} />
@@ -927,9 +946,7 @@ function RequestEditor() {
       if (alive.current)
         navigate("/requests", {
           state: {
-            saved: id
-              ? "Изменения сохранены"
-              : "Заявка создана. Её можно открыть и изменить в любое время.",
+            saved: id ? "Изменения сохранены" : "Заявка сохранена",
           },
         });
     } catch (e) {
@@ -1024,7 +1041,6 @@ function RequestEditor() {
               </label>
               <input
                 id="title"
-                autoFocus
                 value={draft.title}
                 maxLength={160}
                 placeholder="Например, бот для записи на обучение"

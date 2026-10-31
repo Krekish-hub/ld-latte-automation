@@ -235,7 +235,28 @@ try {
   await page.getByRole("link", { name: /Бот для записи/ }).waitFor();
   assert.equal(await page.locator(".list-meta b").textContent(), "3");
   await page.screenshot({ path: "tmp/qa/list-desktop.png", fullPage: true });
-  await page.setViewportSize({ width: 360, height: 800 });
+  for (const width of [320, 375, 390, 414, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    assert.ok(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+      `no horizontal overflow at ${width}px`,
+    );
+    assert.ok(
+      await page
+        .getByRole("textbox", { name: "Поиск по названию" })
+        .evaluate((el) => parseFloat(getComputedStyle(el).fontSize) >= 16),
+      `readable search at ${width}px`,
+    );
+    for (const button of await page.locator(".tab").all()) {
+      assert.ok(
+        (await button.boundingBox()).height >= 44,
+        `touch target at ${width}px`,
+      );
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(
     await page.getByText("Бот", { exact: true }).isVisible(),
     "category must be visible on mobile",
@@ -280,10 +301,29 @@ try {
     );
   await page.getByRole("link", { name: /Тестовая задача/ }).waitFor();
   assert.equal(inserts, 1, "double submit creates one record");
+  await page
+    .locator(".save-toast")
+    .getByText("Заявка сохранена", { exact: true })
+    .waitFor();
+  const toast = await page.locator(".save-toast").boundingBox();
+  assert.ok(
+    toast.y >= 0 && toast.y + toast.height <= 844,
+    "save notification is in the mobile viewport",
+  );
+  assert.equal(
+    await page.evaluate(() => scrollY),
+    0,
+    "successful save returns to top",
+  );
+  await page.screenshot({ path: "tmp/qa/saved-mobile.png", fullPage: true });
   await page.getByRole("link", { name: /Тестовая задача/ }).click();
   await page.getByLabel("Статус").selectOption("completed");
   await page.getByRole("button", { name: "Сохранить изменения" }).click();
   await page.getByRole("link", { name: /Тестовая задача/ }).waitFor();
+  await page
+    .locator(".save-toast")
+    .getByText("Изменения сохранены", { exact: true })
+    .waitFor();
   assert.equal(rows[0].status, "completed");
   assert.deepEqual(errors, []);
   console.log(
