@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1210" viewBox="0 0 1600 1210" role="img" aria-labelledby="title desc">
+<title id="title">LD LATTE — план сбора статистики Instagram</title>
+<desc id="desc">Владелец подключает профессиональные аккаунты через Meta OAuth. Специалист настраивает Unified Login. Сервер получает токен, обнаруживает аккаунты, собирает Insights, сохраняет нормализованные снимки и контролирует доступ.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#577369"/></marker></defs>
+<style>text{font-family:Arial, sans-serif;fill:#203e34}.title{font-size:34px;font-weight:700}.subtitle{font-size:18px;fill:#64776c}.lane{font-size:15px;font-weight:700;letter-spacing:1px}.node-title{font-size:19px;font-weight:700}.body{font-size:16px;fill:#52685e}.edge{fill:none;stroke:#577369;stroke-width:2;marker-end:url(#arrow)}.edge-label{font-size:14px;fill:#64776c}.number{font-size:14px;font-weight:700;fill:#fff}</style>
+<rect width="1600" height="1210" fill="#f8faf7"/>
+<text x="50" y="63" class="title">Instagram → отчётность</text>
+<text x="50" y="98" class="subtitle">LD LATTE • проект подключения • Unified Login • 30.10.2026</text>
+<rect x="30" y="135" width="1540" height="240" rx="18" fill="#edf3e6"/>
+<rect x="30" y="400" width="1540" height="250" rx="18" fill="#eaf0f4"/>
+<rect x="30" y="675" width="1540" height="405" rx="18" fill="#eff3f0"/>
+<text x="55" y="169" class="lane">1. ВЛАДЕЛЕЦ И ТЕХНИЧЕСКИЙ СПЕЦИАЛИСТ</text>
+<text x="55" y="435" class="lane">2. СЕРВЕР: ПОДКЛЮЧЕНИЕ И ДОСТУП</text>
+<text x="55" y="710" class="lane">3. АВТОМАТИЧЕСКИЙ СБОР И ОТЧЁТ</text>
+
+<rect x="60" y="195" width="440" height="140" rx="12" fill="#fff" stroke="#cedbd2"/>
+<circle cx="87" cy="225" r="13" fill="#315d49"/><text x="87" y="230" text-anchor="middle" class="number">1</text>
+<text x="111" y="232" class="node-title">Реестр активов и доступов</text>
+<text x="82" y="265" class="body">Business / Creator, portfolio, ответственный</text>
+<text x="82" y="289" class="body">Владелец определяет метрики и периоды</text>
+<rect x="580" y="195" width="440" height="140" rx="12" fill="#fff" stroke="#cedbd2"/>
+<circle cx="607" cy="225" r="13" fill="#315d49"/><text x="607" y="230" text-anchor="middle" class="number">2</text>
+<text x="631" y="232" class="node-title">Настройка Meta app</text>
+<text x="602" y="265" class="body">Специалист: Unified config, permissions</text>
+<text x="602" y="289" class="body">HTTPS redirect, review / Live при необходимости</text>
+<rect x="1100" y="195" width="440" height="140" rx="12" fill="#fff" stroke="#cedbd2"/>
+<circle cx="1127" cy="225" r="13" fill="#315d49"/><text x="1127" y="230" text-anchor="middle" class="number">3</text>
+<text x="1151" y="232" class="node-title">OAuth и согласие владельца</text>
+<text x="1122" y="265" class="body">Вход Instagram или Facebook на стороне Meta</text>
+<text x="1122" y="289" class="body">Выбор portfolio и Instagram-аккаунтов</text>
+<path d="M 500 265 H 580" class="edge"/>
+<path d="M 1020 265 H 1100" class="edge"/>
+<rect x="1100" y="465" width="440" height="140" rx="12" fill="#fff" stroke="#cedbd2"/>
+<circle cx="1127" cy="495" r="13" fill="#315d49"/><text x="1127" y="500" text-anchor="middle" class="number">4</text>
+<text x="1151" y="502" class="node-title">Серверный обмен code</text>
+<text x="1122" y="535" class="body">Проверка одноразового OAuth state</text>
+<text x="1122" y="559" class="body">BISU token; Meta app secret только серверу</text>
+<rect x="580" y="465" width="440" height="140" rx="12" fill="#fff" stroke="#cedbd2"/>
+<circle cx="607" cy="495" r="13" fill="#315d49"/><text x="607" y="500" text-anchor="middle" class="number">5</text>
+<text x="631" y="502" class="node-title">Секреты и discovery</text>
+<text x="602" y="535" class="body">Token reference + expiry + config / business ID</text>
+<text x="602" y="559" class="body">me → assigned_instagram_accounts, pagination</text>
+<rect x="60" y="465" width="440" height="140" rx="12" fill="#fff" stroke="#cedbd2"/>
+<circle cx="87" cy="495" r="13" fill="#315d49"/><text x="87" y="500" text-anchor="middle" class="number">6</text>
+<text x="111" y="502" class="node-title">Реестр соединений</text>
+<text x="82" y="535" class="body">IG account ID ↔ connection ↔ portfolio</text>
+<text x="82" y="559" class="body">Несколько portfolios — отдельные токены</text>
+<path d="M 1320 335 V 465" class="edge"/>
+<text x="1340" y="395" class="edge-label">authorization code</text>
+<path d="M 1100 535 H 1020" class="edge"/>
+<path d="M 580 535 H 500" class="edge"/>
+<rect x="60" y="755" width="440" height="140" rx="12" fill="#fff" stroke="#cedbd2"/>
+<circle cx="87" cy="785" r="13" fill="#315d49"/><text x="87" y="790" text-anchor="middle" class="number">7</text>
+<text x="111" y="792" class="node-title">Планировщик и Graph API</text>
+<text x="82" y="825" class="body">Задания по account; профиль / media / insights</text>
+<text x="82" y="849" class="body">Явные периоды; cursor; ограниченные retries</text>
+<rect x="580" y="755" width="440" height="140" rx="12" fill="#fff" stroke="#cedbd2"/>
+<circle cx="607" cy="785" r="13" fill="#315d49"/><text x="607" y="790" text-anchor="middle" class="number">8</text>
+<text x="631" y="792" class="node-title">Нормализация и хранение</text>
+<text x="602" y="825" class="body">Account / media / metric / period / dimensions</text>
+<text x="602" y="849" class="body">Идемпотентная запись, fetched_at, API version</text>
+<rect x="1100" y="755" width="440" height="140" rx="12" fill="#fff" stroke="#cedbd2"/>
+<circle cx="1127" cy="785" r="13" fill="#315d49"/><text x="1127" y="790" text-anchor="middle" class="number">9</text>
+<text x="1151" y="792" class="node-title">Отчётность</text>
+<text x="1122" y="825" class="body">Подписчики, views, reach, метрики публикаций</text>
+<text x="1122" y="849" class="body">Период, свежесть, ограничения, unavailable</text>
+<path d="M 280 605 V 755" class="edge"/>
+<path d="M 500 825 H 580" class="edge"/>
+<path d="M 1020 825 H 1100" class="edge"/>
+<rect x="60" y="940" width="700" height="115" rx="12" fill="#fff" stroke="#cedbd2"/>
+<circle cx="87" cy="970" r="13" fill="#315d49"/><text x="87" y="975" text-anchor="middle" class="number">10</text>
+<text x="111" y="977" class="node-title">Мониторинг и восстановление</text>
+<text x="82" y="1010" class="body">Сбои, срок токена, watermark, пропуски Story</text>
+<text x="82" y="1034" class="body">Разрешённый refresh либо reconnect</text>
+<rect x="820" y="940" width="720" height="115" rx="12" fill="#e4ede4"/><text x="842" y="974" class="node-title">Границы данных</text><text x="842" y="1002" class="body">Account: до 90 дней • Media: до 2 лет • Stories: 24 часа</text><text x="842" y="1028" class="body">Задержка расчёта до 48 часов. Пустой ответ ≠ 0.</text>
+<path d="M 280 895 V 940" class="edge"/>
+<path d="M 60 995 H 45 V 360 H 1550 V 265 H 1540" class="edge"/>
+<text x="570" y="358" class="edge-label">отзыв / перенос → владелец подключает заново</text>
+<text x="50" y="1122" class="body">Основной путь — актуальная рекомендация Meta. Для Page-linked Facebook Login и Instagram Login действуют другие токены/права.</text><text x="50" y="1151" class="body">Схема описывает будущую реализацию: реальные аккаунты и API не подключались. Проверки, альтернативы и источники — в README.</text></svg>

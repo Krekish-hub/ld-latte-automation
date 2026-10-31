@@ -1,0 +1,177 @@
+{
+  "date": "2026-10-31",
+  "result": "PASS",
+  "mode": "Synthetic authenticated webhook fixtures -> real production n8n workflow -> real Supabase -> real Telegram API acknowledgements",
+  "human_confirmed": "Two-button start and callback previously confirmed by owner",
+  "matched_receipts": [
+    {
+      "label": "five",
+      "expected": 5,
+      "actual": 5,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:42:35.491Z",
+      "provider_ok": true
+    },
+    {
+      "label": "nine",
+      "expected": 9,
+      "actual": 9,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:45:04.267Z",
+      "provider_ok": true
+    },
+    {
+      "label": "added-ten",
+      "expected": 10,
+      "actual": 10,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:45:26.537Z",
+      "provider_ok": true
+    },
+    {
+      "label": "renamed-menu",
+      "expected": 10,
+      "actual": 10,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:45:40.788Z",
+      "provider_ok": true
+    },
+    {
+      "label": "rename-choice",
+      "expected": 0,
+      "actual": 0,
+      "text": "Вы выбрали: Название обновлено (QA)",
+      "at": "2026-10-31T04:45:52.975Z",
+      "provider_ok": true
+    },
+    {
+      "label": "disabled-menu",
+      "expected": 9,
+      "actual": 9,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:46:05.639Z",
+      "provider_ok": true
+    },
+    {
+      "label": "disabled-choice",
+      "expected": 0,
+      "actual": 0,
+      "text": "Услуга больше недоступна. Отправьте /start, чтобы обновить меню.",
+      "at": "2026-10-31T04:46:14.480Z",
+      "provider_ok": true
+    },
+    {
+      "label": "zero",
+      "expected": 0,
+      "actual": 0,
+      "text": "Сейчас нет доступных услуг. Попробуйте позже.",
+      "at": "2026-10-31T04:47:10.908Z",
+      "provider_ok": true
+    },
+    {
+      "label": "restored-two",
+      "expected": 2,
+      "actual": 2,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:47:52.125Z",
+      "provider_ok": true
+    }
+  ],
+  "all_acknowledgements": [
+    {
+      "label": "five",
+      "expected": 5,
+      "actual": 5,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:42:35.491Z",
+      "provider_ok": true
+    },
+    {
+      "label": "nine",
+      "expected": 9,
+      "actual": 9,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:45:04.267Z",
+      "provider_ok": true
+    },
+    {
+      "label": "added-ten",
+      "expected": 10,
+      "actual": 10,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:45:26.537Z",
+      "provider_ok": true
+    },
+    {
+      "label": "added-ten",
+      "expected": 10,
+      "actual": 0,
+      "text": "Вы выбрали: Дополнительная услуга (QA 20261031)",
+      "at": "2026-10-31T04:45:35.901Z",
+      "provider_ok": true
+    },
+    {
+      "label": "renamed-menu",
+      "expected": 10,
+      "actual": 10,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:45:40.788Z",
+      "provider_ok": true
+    },
+    {
+      "label": "rename-choice",
+      "expected": 0,
+      "actual": 0,
+      "text": "Вы выбрали: Название обновлено (QA)",
+      "at": "2026-10-31T04:45:52.975Z",
+      "provider_ok": true
+    },
+    {
+      "label": "disabled-menu",
+      "expected": 9,
+      "actual": 9,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:46:05.639Z",
+      "provider_ok": true
+    },
+    {
+      "label": "disabled-choice",
+      "expected": 0,
+      "actual": 0,
+      "text": "Услуга больше недоступна. Отправьте /start, чтобы обновить меню.",
+      "at": "2026-10-31T04:46:14.480Z",
+      "provider_ok": true
+    },
+    {
+      "label": "zero",
+      "expected": 0,
+      "actual": 0,
+      "text": "Сейчас нет доступных услуг. Попробуйте позже.",
+      "at": "2026-10-31T04:47:10.908Z",
+      "provider_ok": true
+    },
+    {
+      "label": "restored-two",
+      "expected": 2,
+      "actual": 2,
+      "text": "Выберите услугу:",
+      "at": "2026-10-31T04:47:52.125Z",
+      "provider_ok": true
+    }
+  ],
+  "receipt_selection": "Stage labels identify time windows; match both message type/text and button count. One additional selection of the newly added service was observed during added-ten.",
+  "workflow_version_unchanged": true,
+  "workflow_graph_unchanged": true,
+  "sender_source_restored_byte_for_byte": true,
+  "source_after_cleanup": {
+    "total_services": 9,
+    "active_services": 2,
+    "qa_named_services": 0,
+    "verified_by": "Independent Supabase MCP SQL"
+  },
+  "health_after_cleanup": 200,
+  "temporary_telemetry": "Output-only acknowledgement counts/text; scoped to explicitly approved chat; removed after tests",
+  "limitations": [
+    "Synthetic callback fixtures do not prove Telegram-origin callback delivery for every stage; real owner callback was separately confirmed"
+  ]
+}

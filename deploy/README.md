@@ -1,27 +1,30 @@
 # Размещение
 
-Состояние на 30.10.2026: настроена инфраструктура, приложение и Telegram workflow ещё не опубликованы.
+Состояние на 31.10.2026: веб-приложение опубликовано с мобильными исправлениями и заметным подтверждением сохранения; 23 живые Auth/Data API-проверки пройдены. Telegram workflow активен; пользователь подтвердил две inline-кнопки и callback. Автоматизированная матрица из 9 стадий пройдена через синтетические аутентифицированные входы и настоящие n8n/Supabase/Telegram API. Границы доказательств и отчёты перечислены в [статусе приёмки](../docs/acceptance-status.md).
 
-- Сайт: https://latte.193-232-88-121.nip.io/ - временная страница подготовки.
-- Webhook: https://hooks-latte.193-232-88-121.nip.io/webhook/<workflow-path>.
-- Проверка процесса n8n: https://hooks-latte.193-232-88-121.nip.io/healthz.
+- Сайт: https://latte.193-232-88-121.nip.io/ - приложение заявок с Supabase Auth.
+- Webhook: `https://hooks-latte.144-31-244-32.nip.io:88/webhook/<workflow-path>`.
+- Проверка процесса n8n: https://hooks-latte.144-31-244-32.nip.io:88/healthz.
 - Редактор и /rest/* на публичном webhook-имени возвращают 404.
+
+Для Telegram актуальна [инструкция прямого входа](TELEGRAM_DIRECT.md) и [установка private node](../automation/telegram/CUSTOM_NODE.md). Старый вход через ретранслятор больше не является production webhook.
 
 ## Топология
 
 ```text
-Internet -> existing HAProxy :443, exact SNI routes
-          -> existing Caddy 127.0.0.1:10445 -> /srv/ld-latte/site
-          -> existing Caddy 127.0.0.1:10446 -> 127.0.0.1:15678
-                                            -> SSH tunnel
-                                            -> n8n host 127.0.0.1:5678
+Сайт: Internet -> existing HAProxy :443, exact SNI route
+               -> existing Caddy 127.0.0.1:10445 -> /srv/ld-latte/site
+
+Бот: Telegram -> HTTPS :88 на VPS n8n -> ld-latte-webhook.service
+              -> HTTP 127.0.0.1:5678 -> ld-latte-n8n
+ACME: HTTP :80 на VPS n8n -> HTTP-01 challenge
 ```
 
 На ретрансляторе Docker не устанавливался. Существующие маршруты HAProxy сохранены; добавлены только два точных SNI-условия и два backend. В Caddy добавлен import отдельного `/etc/caddy/ld-latte.caddy`. HTTP-01 выдаёт сертификаты без переноса публичного 443 с HAProxy на Caddy.
 
 n8n 2.45.6 запущен Docker-контейнером `ld-latte-n8n` на первом VPS. Образ закреплён digest в run-n8n.sh. Используется постоянный volume `ld_latte_n8n_data`. Секретный env-файл `/opt/ld-latte/n8n.env` имеет права 600 и не входит в Git. Compose plugin не устанавливался; для одного контейнера достаточно воспроизводимого run-скрипта.
 
-Туннель `ld-latte-n8n-tunnel.service` использует существующее SSH-доверие серверов, проверяет host key и публикует только loopback 15678. Новые SSH-ключи и права доступа не создавались. Существующая служба ретрансляции не изменялась. При переносе нужны собственные SSH-доступы; приватные ключи не копировать в репозиторий.
+Исторический путь бота через `ld-latte-n8n-tunnel.service` использовал SSH-доверие серверов и loopback 15678. Production webhook перенесён на прямой Caddy :88, существующие Xray/VPN порты 443/8443 не менялись. Приведённые ниже проверки 30 октября и описание прежнего туннеля сохраняются как история и резервный вариант; текущее размещение и откат бота описаны в TELEGRAM_DIRECT.md. Приватные ключи не копировать в репозиторий.
 
 ## Подготовка чистого n8n-хоста
 
@@ -30,8 +33,8 @@ n8n 2.45.6 запущен Docker-контейнером `ld-latte-n8n` на пе
 3. Скопировать n8n.env.example в закрытый env-файл. Вписать реальное webhook-имя, сгенерировать encryption key непосредственно на сервере; права 600. Для существующего volume сохранить прежний ключ.
 4. Запустить `sh deploy/run-n8n.sh`. Не прерывать миграции при первом старте.
 5. Проверить `curl http://127.0.0.1:5678/healthz` и состояние контейнера.
-6. Настроить HTTPS-прокси и зашифрованный туннель до loopback 5678. Единственный HTTP-прокси в текущей схеме - Caddy; HAProxy и SSH передают TCP, поэтому N8N_PROXY_HOPS=1.
-7. Через SSH-туннель открыть локальный редактор, создать владельца, настроить credentials и workflow. Эти шаги пока не выполнены.
+6. Настроить прямой HTTPS-вход на порту 88 по TELEGRAM_DIRECT.md; единственный HTTP-прокси - Caddy, поэтому N8N_PROXY_HOPS=1. До импорта workflow установить CUSTOM.ldLatteTelegram по инструкции компонента.
+7. Через SSH-туннель открыть локальный редактор, создать владельца, настроить credentials и workflow.
 
 Пример доступа к редактору с компьютера администратора:
 
@@ -40,6 +43,28 @@ ssh -N -L 5678:127.0.0.1:5678 USER@N8N_HOST
 ```
 
 После входа в SSH открыть `http://localhost:5678`. Пароли и токены вводить непосредственно в интерфейс/credentials. Публичный /setup не открывать для начального создания владельца.
+
+## Доверие к сертификату Supabase
+
+Для используемого shared pooler проверка TLS в исходном Node.js-контейнере завершалась `SELF_SIGNED_CERT_IN_CHAIN`. На 31 октября установлен публичный [Supabase Root 2021 CA](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt), без отключения проверки цепочки или hostname. Это сертификат, а не приватный ключ.
+
+При переносе скачать CA по HTTPS из источника Supabase и сверить его до установки:
+
+```sh
+curl -fsSL https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt -o /tmp/supabase-ca.crt
+openssl x509 -in /tmp/supabase-ca.crt -noout -subject -issuer -enddate -fingerprint -sha256
+```
+
+Проверенный SHA-256 отпечаток сертификата: `80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA`. Срок действия до 26.04.2031. При замене CA провайдером сначала проверить новый сертификат по официальному источнику.
+
+Скопировать его в постоянный volume работающего контейнера и разрешить чтение процессу n8n:
+
+```sh
+docker cp /tmp/supabase-ca.crt ld-latte-n8n:/home/node/.n8n/supabase-ca.crt
+docker exec -u 0 ld-latte-n8n chmod 644 /home/node/.n8n/supabase-ca.crt
+```
+
+В закрытый env-файл добавить `NODE_EXTRA_CA_CERTS=/home/node/.n8n/supabase-ca.crt`. Затем пересоздать только контейнер n8n по процедуре резервного копирования ниже, с прежним volume, encryption key и закреплённым образом: обычный restart не перечитывает Docker env-файл. Для чистой установки сертификат нужно положить в volume до включения этой переменной. В Postgres credential выбрать `SSL: Require`, выключить `Ignore SSL Issues`, установить пул максимум 2 подключения. После старта проверить новое соединение и запрет доступа роли к `requests` и `auth.users`.
 
 ## Обновление сайта
 
@@ -73,3 +98,9 @@ Reload Caddy кратковременно оборвал текущие SSH-со
 Перед обновлением n8n: остановить только его контейнер, сделать согласованную копию volume и env/encryption key в закрытое резервное хранилище. Хранить предыдущий digest; откат образа после миграции БД требует совместимого бэкапа БД. Не выполнять общий docker prune, не удалять чужие volumes/сети, не перезапускать весь сервер.
 
 Фактическое восстановление из резервной копии пока не тестировалось.
+
+## Публикация приложения, 30 октября
+
+Frontend собран локально с URL и publishable key проекта. В архив вошли только index.html и assets; секретных ключей в конфигурации нет. Сборка размещена в `/srv/ld-latte/releases/web-20261030-2130`, `/srv/ld-latte/site` стал symlink на этот release. Исходная временная страница сохранена в `/srv/ld-latte/site-placeholder-20261030`. Caddy/HAProxy для этого переключения не перезагружались.
+
+Проверены HTTPS страницы, JS asset (200 text/javascript), прямой SPA-маршрут (200), живой рендер входа/регистрации и мобильный экран. Старые proxy-службы активны. Для отката страницы можно переключить symlink на сохранённую временную страницу, не меняя маршрутизацию. SQL схемы и данные пользователей при откате frontend не удаляются.
