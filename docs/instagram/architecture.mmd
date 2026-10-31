@@ -1,0 +1,34 @@
+flowchart TD
+  subgraph OWNER[Владелец аккаунтов]
+    A[Реестр Business / Creator аккаунтов и portfolio]
+    B[OAuth Meta: вход Instagram или Facebook]
+    C[Выбор portfolio, Instagram-активов и согласие]
+    R[Переподключение при отзыве / переносе актива]
+  end
+  subgraph TECH[Технический специалист]
+    D[Business-owned Meta app + Unified configuration]
+    E[HTTPS redirect, permissions, review / Live по необходимости]
+  end
+  subgraph AUTO[Автоматически на сервере]
+    F[Проверка state и обмен code на BISU token]
+    G[(Секреты: token reference, expiry, config / business ID)]
+    H[Discovery: me + assigned_instagram_accounts]
+    I[Реестр account ID и соединений]
+    J[Планировщик: отдельные задания по аккаунтам]
+    K[Graph API: профиль / media / account + media insights]
+    L[Pagination, нормализация, unavailable не равно нулю]
+    M[(Отчётное хранилище: снимки / периоды / fetched_at)]
+    N[Отчёты: метрики, период, актуальность, ограничения]
+    O[Мониторинг квот, сбоев и срока токена]
+    P[Разрешённый refresh / ограниченный retry]
+  end
+  A --> D --> E --> B --> C
+  C -->|authorization code| F
+  F -->|секрет только серверу| G
+  F --> H --> I --> J
+  G -->|нужный token| K
+  J --> K --> L -->|идемпотентная запись| M --> N
+  K --> O
+  O -->|временная ошибка / допустимое обновление| P --> J
+  O -->|отзыв / reconnect required| R --> B
+  M -->|watermark после успешной записи| J
