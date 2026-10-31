@@ -1,0 +1,341 @@
+{
+  "name": "LD LATTE - dynamic service menu",
+  "nodes": [
+    {
+      "id": "telegram-updates",
+      "name": "Telegram updates",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "webhookId": "e084eddb-efb9-4600-b8a9-3d682b813365"
+    },
+    {
+      "id": "normalize-update",
+      "name": "Normalize update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        240
+      ],
+      "parameters": {
+        "jsCode": "function normalizeUpdate(update) {\r\n  const callback = update?.callback_query;\r\n  const message = callback?.message ?? update?.message;\r\n  const chat = message?.chat;\r\n  if (chat?.type !== 'private' || !Number.isSafeInteger(chat.id)) return { kind: 'ignore', chatId: null, queryId: '', serviceId: null };\r\n  const common = { chatId: chat.id, queryId: '', serviceId: null };\r\n  if (callback) {\r\n    if (typeof callback.id !== 'string' || !callback.id) return { ...common, kind: 'ignore', chatId: null };\r\n    common.queryId = callback.id;\r\n    const match = /^svc:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(callback.data ?? '');\r\n    if (!match) return { ...common, kind: 'hint', text: 'Эта кнопка устарела. Отправьте /start, чтобы открыть меню.' };\r\n    return { ...common, kind: 'selection', serviceId: match[1].toLowerCase() };\r\n  }\r\n  const text = typeof message.text === 'string' ? message.text.trim() : '';\r\n  if (/^\\/start(?:@ZmeiiniyBot)?(?:\\s+.*)?$/i.test(text)) return { ...common, kind: 'start' };\r\n  return { ...common, kind: 'hint', text: 'Чтобы выбрать услугу, отправьте /start.' };\r\n}\nreturn [{ json: normalizeUpdate($input.first().json) }];"
+      }
+    },
+    {
+      "id": "private-chat",
+      "name": "Private chat",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "condition",
+              "leftValue": "={{ $json.chatId !== null }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "has-callback",
+      "name": "Has callback",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "condition",
+              "leftValue": "={{ Boolean($json.queryId) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "answer-callback",
+      "name": "Answer callback",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "resource": "callback",
+        "operation": "answerQuery",
+        "queryId": "={{ $('Normalize update').first().json.queryId }}",
+        "additionalFields": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "restore-event",
+      "name": "Restore event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Normalize update').first().json }];"
+      }
+    },
+    {
+      "id": "read-required",
+      "name": "Read required",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "condition",
+              "leftValue": "={{ ['start', 'selection'].includes($('Normalize update').first().json.kind) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "read-active-services",
+      "name": "Read active services",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1680,
+        80
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', name) order by sort_order, id), '[]'::jsonb) as services\nfrom public.services\nwhere active = true and ($1::uuid is null or id = $1::uuid);",
+        "options": {
+          "queryReplacement": "={{ [ $('Normalize update').first().json.serviceId ] }}"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "prepare-reply",
+      "name": "Prepare reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        160
+      ],
+      "parameters": {
+        "jsCode": "function prepareReply(event, queryResult) {\r\n  const reply = { chatId: event.chatId, text: event.text ?? '', rows: [], hasButtons: false };\r\n  if (event.kind === 'hint' || event.kind === 'ignore') return reply;\r\n  let services = queryResult?.services;\r\n  if (typeof services === 'string') { try { services = JSON.parse(services); } catch { services = null; } }\r\n  const valid = Array.isArray(services) && services.every(s => s && typeof s.name === 'string' && s.name.trim() && typeof s.id === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(s.id));\r\n  if (queryResult?.error || !valid) return { ...reply, text: 'Не удалось загрузить услуги. Попробуйте ещё раз немного позже.' };\r\n  if (event.kind === 'selection') return { ...reply, text: services.length ? `Вы выбрали: ${services[0].name.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}` : 'Услуга больше недоступна. Отправьте /start, чтобы обновить меню.' };\r\n  if (!services.length) return { ...reply, text: 'Сейчас нет доступных услуг. Попробуйте позже.' };\r\n  return {\r\n    ...reply, text: 'Выберите услугу:', hasButtons: true,\r\n    rows: services.map(service => [{ text: service.name, callback_data: `svc:${service.id}` }]),\r\n  };\r\n}\nreturn [{ json: prepareReply($('Normalize update').first().json, $input.first().json) }];"
+      }
+    },
+    {
+      "id": "send-reply",
+      "name": "Send reply",
+      "type": "CUSTOM.ldLatteTelegram",
+      "typeVersion": 1,
+      "position": [
+        2160,
+        160
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "keyboard": "={{ $json.rows }}"
+      }
+    }
+  ],
+  "connections": {
+    "Telegram updates": {
+      "main": [
+        [
+          {
+            "node": "Normalize update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize update": {
+      "main": [
+        [
+          {
+            "node": "Private chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Private chat": {
+      "main": [
+        [
+          {
+            "node": "Has callback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Has callback": {
+      "main": [
+        [
+          {
+            "node": "Answer callback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read required",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer callback": {
+      "main": [
+        [
+          {
+            "node": "Restore event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore event": {
+      "main": [
+        [
+          {
+            "node": "Read required",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read required": {
+      "main": [
+        [
+          {
+            "node": "Read active services",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read active services": {
+      "main": [
+        [
+          {
+            "node": "Prepare reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare reply": {
+      "main": [
+        [
+          {
+            "node": "Send reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Chita",
+    "executionTimeout": 60,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all",
+    "saveManualExecutions": false
+  },
+  "pinData": {},
+  "tags": []
+}
