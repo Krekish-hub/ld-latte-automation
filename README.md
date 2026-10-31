@@ -44,6 +44,9 @@ pnpm build
 
 ## Передача и эксплуатация
 
+- [Готовый текст для сдачи и ответы на вопросы](docs/SUBMISSION.md).
+- Снимки интерфейса с демонстрационными данными и подменённым API: [список на компьютере](docs/screenshots/list-desktop.png), [список на телефоне](docs/screenshots/list-mobile.png), [форма](docs/screenshots/form-mobile.png), [подтверждение сохранения](docs/screenshots/saved-mobile.png). Они показывают интерфейс; доказательства реальной изоляции данных приведены отдельно в отчёте A/B.
+
 - [Использование AI и проверка результата](docs/ai-usage.md).
 - [Статус приёмки и границы проверок](docs/acceptance-status.md), [полная матрица требований](docs/ACCEPTANCE.md).
 - [Размещение сайта и история инфраструктуры](deploy/README.md), [актуальный вход Telegram и откат](deploy/TELEGRAM_DIRECT.md).
