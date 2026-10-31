@@ -1,8 +1,8 @@
 # Размещение
 
-Состояние на 30.10.2026: настроена инфраструктура, приложение и Telegram workflow ещё не опубликованы.
+Состояние на 31.10.2026: веб-приложение опубликовано ([исходники в PR #1](https://github.com/Krekish-hub/ld-latte-automation/pull/1)); Telegram workflow опубликован в n8n. Доставка нового сообщения из Telegram ещё требует проверки.
 
-- Сайт: https://latte.193-232-88-121.nip.io/ - временная страница подготовки.
+- Сайт: https://latte.193-232-88-121.nip.io/ - приложение заявок с Supabase Auth.
 - Webhook: https://hooks-latte.193-232-88-121.nip.io/webhook/<workflow-path>.
 - Проверка процесса n8n: https://hooks-latte.193-232-88-121.nip.io/healthz.
 - Редактор и /rest/* на публичном webhook-имени возвращают 404.
