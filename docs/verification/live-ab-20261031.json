@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-31",
+  "result": "PASS: 23 live assertions; cleanup independently verified",
+  "mode": "Real Supabase Auth sessions and PostgREST; no API mocks",
+  "assertions": [
+    "password login a",
+    "password login b",
+    "separate principals",
+    "server owner and initial status A",
+    "server owner and initial status B",
+    "list isolation 0",
+    "list isolation 1",
+    "A cannot read B",
+    "B cannot read A",
+    "B cannot update A",
+    "cross-update changed no data",
+    "forged owner rejected",
+    "owner reassignment rejected",
+    "creation status override rejected",
+    "duplicate ID rejected",
+    "own edit and status update",
+    "server update timestamp changed",
+    "stale edit changes no rows",
+    "B own edit permitted",
+    "search and status filter",
+    "anonymous read denied",
+    "anonymous write denied",
+    "data persists after logout/login"
+  ],
+  "raw_probe": {
+    "ok": false,
+    "run": "7abb007a7e1e40bc9ae4ff6e15b66397",
+    "checks": [
+      "password login a",
+      "password login b",
+      "separate principals",
+      "server owner and initial status A",
+      "server owner and initial status B",
+      "list isolation 0",
+      "list isolation 1",
+      "A cannot read B",
+      "B cannot read A",
+      "B cannot update A",
+      "cross-update changed no data",
+      "forged owner rejected",
+      "owner reassignment rejected",
+      "creation status override rejected",
+      "duplicate ID rejected",
+      "own edit and status update",
+      "server update timestamp changed",
+      "stale edit changes no rows",
+      "B own edit permitted",
+      "search and status filter",
+      "anonymous read denied",
+      "anonymous write denied",
+      "data persists after logout/login"
+    ],
+    "failure": null,
+    "cleanup_errors": [
+      "test rows remain"
+    ],
+    "created_users": 2
+  },
+  "cleanup": {
+    "remaining_test_users": 0,
+    "remaining_test_requests": 0,
+    "verification": "Independent Supabase MCP SQL scoped to QA run",
+    "note": "The probe reported a cleanup warning because service_role has no SELECT on requests. No grants were broadened. Independent SQL confirmed that no test rows remained."
+  },
+  "temporary_function": {
+    "slug": "qa-isolation-once-20261031",
+    "version_after_test": 2,
+    "verify_jwt": true,
+    "behavior": "410; no privileged code",
+    "user_approval": "Explicitly approved temporary admin-backed probe with secret auth and 15-minute expiry"
+  },
+  "limitations": [
+    "Normal signup/SMTP delivery was not rerun by this probe",
+    "This server API probe does not replace physical-phone UI assessment"
+  ]
+}
